@@ -4,30 +4,30 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"path"
 )
 
-func main() {
-    http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-        var filePath = path.Join("views", "index.html")
-        var tmpl, err = template.ParseFiles(filePath)
-        if err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
-        var data = map[string]interface{}{
-            "title": "Learning Golang Web",
-            "name": "Batman",
-        }
+type M map[string]interface{}
 
-        err = tmpl.Execute(w, data)
+func main() {
+    var tmpl, err = template.ParseGlob("views/*")
+    if err != nil {
+        panic(err.Error())
+    }
+    http.HandleFunc("/index", func(w http.ResponseWriter, r *http.Request) {
+    var data = M{"name": "Batman"}
+    err = tmpl.ExecuteTemplate(w, "index", data)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+    }
+    })
+
+    http.HandleFunc("/about", func(w http.ResponseWriter, r *http.Request) {
+        var data = M{"name": "Batman"}
+        err = tmpl.ExecuteTemplate(w, "about", data)
         if err != nil {
             http.Error(w, err.Error(), http.StatusInternalServerError)
         }
     })
-    http.Handle("/static/", 
-        http.StripPrefix("/static/", 
-            http.FileServer(http.Dir("assets"))))
     fmt.Println("server started at localhost:9000")
     http.ListenAndServe(":9000", nil)
 }
