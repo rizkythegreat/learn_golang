@@ -2,80 +2,62 @@ package main
 
 import (
 	"fmt"
-	"html/template"
-	"io"
 	"net/http"
-	"os"
-	"path/filepath"
+	"strings"
+
+	"github.com/labstack/echo"
 )
 
+type M map[string]interface{}
+
 func main() {
-    http.HandleFunc("/", routeIndexGet)
-    http.HandleFunc("/process", routeSubmitPost)
+	r := echo.New()
 
-    fmt.Println("server started at localhost:9000")
-    http.ListenAndServe(":9000", nil)
-}
+	r.GET("/", func(ctx echo.Context) error {
+		data := "Hello from /index"
+		return ctx.String(http.StatusOK, data)
+	})
 
-func routeIndexGet(w http.ResponseWriter, r *http.Request) {
-    if r.Method != "GET" {
-        http.Error(w, "", http.StatusBadRequest)
-        return
-    }
+	r.GET("/index", func(ctx echo.Context) error {
+		data := "Hello from /index"
+		return ctx.String(http.StatusOK, data)
+	})
 
-    var tmpl = template.Must(template.ParseFiles("view.html"))
-    var err = tmpl.Execute(w, nil)
+	r.GET("/page1", func(ctx echo.Context) error {
+		name := ctx.QueryParam("name")
+		data := fmt.Sprintf("Hello %s", name)
 
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-    }
-}
+		return ctx.String(http.StatusOK, data)
+	})
 
-func routeSubmitPost(w http.ResponseWriter, r *http.Request) {
-    if r.Method != "POST" {
-        http.Error(w, "", http.StatusBadRequest)
-        return
-    }
+	r.GET("/page2/:name", func(ctx echo.Context) error {
+		name := ctx.Param("name")
+		data := fmt.Sprintf("Hello %s", name)
 
-    if err := r.ParseMultipartForm(1024); err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
+		return ctx.String(http.StatusOK, data)
+	})
 
-    alias := r.FormValue("alias")
+	r.GET("/page3/:name/*", func(ctx echo.Context) error {
+		name := ctx.Param("name")
+		message := ctx.Param("*")
 
-    uploadedFile, handler, err := r.FormFile("file")
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
-    defer uploadedFile.Close()
+		data := fmt.Sprintf("Hello %s, I have message for you: %s", name, message)
 
-    dir, err := os.Getwd()
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
+		return ctx.String(http.StatusOK, data)
+	})
 
-    filename := handler.Filename
-    if alias != "" {
-        filename = fmt.Sprintf("%s%s", alias, filepath.Ext(handler.Filename))
-    }
+	r.POST("/page4", func(ctx echo.Context) error {
+		name := ctx.FormValue("name")
+		message := ctx.FormValue("message")
 
-    fileLocation := filepath.Join(dir, "files", filename)
-    targetFile, err := os.OpenFile(fileLocation, os.O_WRONLY|os.O_CREATE, 0666)
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
-    defer targetFile.Close()
+		data := fmt.Sprintf(
+			"Hello %s, I have message for you: %s",
+			name,
+			strings.Replace(message, "/", "", 1),
+		)
 
-    if _, err := io.Copy(targetFile, uploadedFile); err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
+		return ctx.String(http.StatusOK, data)
+	})
 
-    w.Write([]byte("done"))
-
-    // ...
+	r.Start(":9000")
 }
