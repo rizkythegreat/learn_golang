@@ -7,30 +7,24 @@ import (
 	"path"
 )
 
-type Info struct {
-    Affiliation string
-    Address string
+type Superhero struct {
+    Name    string
+    Alias   string
+    Friends []string
 }
 
-type Person struct {
-    Name string
-    Gender string
-    Hobbies []string
-    Info Info
-}
-
-func (t Info) GetAffiliationDetailInfo() string {
-    return "have 31 divisions"
+func (s Superhero) SayHello(from string, message string) string {
+    return fmt.Sprintf("%s said: \"%s\"", from, message)
 }
 
 func main() {
     http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-        var person = Person{
+        var person = Superhero{
             Name:    "Bruce Wayne",
-            Gender:  "male",
-            Hobbies: []string{"Reading Books", "Traveling", "Buying things"},
-            Info:    Info{"Wayne Enterprises", "Gotham City"},
+            Alias:   "Batman",
+            Friends: []string{"Superman", "Flash", "Green Lantern"},
         }
+
         var filePath = path.Join("views", "index.html")
         var tmpl, errTemplate = template.ParseFiles(filePath)
         if errTemplate != nil {
