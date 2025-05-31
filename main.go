@@ -2,35 +2,53 @@ package main
 
 import (
 	"net/http"
-
-	"fmt"
-
-	"github.com/fsnotify/fsnotify"
+	"os"
+	"strconv"
+	"time"
 
 	"github.com/labstack/echo"
-	"github.com/spf13/viper"
 )
 
 func main() {
 	e := echo.New()
-
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath(".")
-	viper.SetConfigName("app.config")
-	viper.WatchConfig()
-	viper.OnConfigChange(func(e fsnotify.Event) {
-		fmt.Println("Config file changed:", e.Name)
+	confAppName := os.Getenv("APP_NAME")
+	if confAppName == "" {
+		e.Logger.Fatal("APP_NAME config is required")
+	}
+	confServerPort := os.Getenv("SERVER_PORT")
+	if confServerPort == "" {
+		e.Logger.Fatal("SERVER_PORT config is required")
+	}
+	e.GET("/index", func(c echo.Context) (err error) {
+		return c.JSON(http.StatusOK, map[string]interface{}{
+			"appName": confAppName,
+			"server": map[string]interface{}{
+				"port": confServerPort,
+			},
+			"env": map[string]interface{}{
+				"SERVER_READ_TIMEOUT_IN_MINUTE":  os.Getenv("SERVER_READ_TIMEOUT_IN_MINUTE"),
+				"SERVER_WRITE_TIMEOUT_IN_MINUTE": os.Getenv("SERVER_WRITE_TIMEOUT_IN_MINUTE"),
+			},
+			"config": map[string]interface{}{
+				"appName": os.Getenv("APP_NAME"),
+				"server": map[string]interface{}{
+					"port": os.Getenv("SERVER_PORT"),
+				},
+			},
+		})
 	})
 
-	err := viper.ReadInConfig()
-	if err != nil {
-		e.Logger.Fatal(err)
+	server := new(http.Server)
+	server.Addr = ":" + confServerPort
+	if confServerReadTimeout := os.Getenv("SERVER_READ_TIMEOUT_IN_MINUTE"); confServerReadTimeout != "" {
+		duration, _ := strconv.Atoi(confServerReadTimeout)
+		server.ReadTimeout = time.Duration(duration) * time.Minute
 	}
 
-	e.GET("/index", func(c echo.Context) (err error) {
-		return c.JSON(http.StatusOK, true)
-	})
-
-	e.Logger.Print("Starting", viper.GetString("appName"))
-	e.Logger.Fatal(e.Start(":" + viper.GetString("server.port")))
+	if confServerWriteTimeout := os.Getenv("SERVER_WRITE_TIMEOUT_IN_MINUTE"); confServerWriteTimeout != "" {
+		duration, _ := strconv.Atoi(confServerWriteTimeout)
+		server.WriteTimeout = time.Duration(duration) * time.Minute
+	}
+	e.Logger.Print("Starting", confAppName)
+	e.Logger.Fatal(e.StartServer(server))
 }
