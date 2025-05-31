@@ -3,6 +3,10 @@ package main
 import (
 	"net/http"
 
+	"fmt"
+
+	"github.com/fsnotify/fsnotify"
+
 	"github.com/labstack/echo"
 	"github.com/spf13/viper"
 )
@@ -10,9 +14,13 @@ import (
 func main() {
 	e := echo.New()
 
-	viper.SetConfigType("json")
+	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
 	viper.SetConfigName("app.config")
+	viper.WatchConfig()
+	viper.OnConfigChange(func(e fsnotify.Event) {
+		fmt.Println("Config file changed:", e.Name)
+	})
 
 	err := viper.ReadInConfig()
 	if err != nil {
