@@ -31,36 +31,63 @@ var ActionAbout = echo.WrapHandler(
 	),
 )
 
-func middlewareOne(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(ctx echo.Context) error {
-		fmt.Println("From middleware One")
-		return next(ctx)
-	}
-}
-
-func middlewareSomething(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("from middleware something")
-		next.ServeHTTP(w, r)
-	})
-}
-
 var (
 	app         = kingpin.New("App", "Simple app")
 	flagAppName = app.Flag("name", "Application name").Required().String()
 	flagPort    = app.Flag("port", "Web server port").Short('p').Default("9000").Int()
 )
 
+var (
+	commandAdd             = app.Command("add", "add new user")
+	commandAddFlagOverride = commandAdd.Flag("override", "override existing user").Short('o').Bool()
+	commandAddArgUser      = commandAdd.Arg("user", "username").Required().String()
+)
+
+var (
+	commandUpdate           = app.Command("update", "update user")
+	commandUpdateArgOldUser = commandUpdate.Arg("old", "old username").Required().String()
+	commandUpdateArgNewUser = commandUpdate.Arg("new", "new username").Required().String()
+)
+
+var (
+	commandDelete          = app.Command("delete", "delete user")
+	commandDeleteFlagForce = commandDelete.Flag("force", "force deletion").Short('f').Bool()
+	commandDeleteArgUser   = commandDelete.Arg("user", "username").Required().String()
+)
+
 func main() {
+	commandAdd.Action(func(ctx *kingpin.ParseContext) error {
+		// more code here ...
+		user := *commandAddArgUser
+		override := *commandAddFlagOverride
+		fmt.Printf("adding user %s, override %t \n", user, override)
+
+		return nil
+	})
+
+	commandUpdate.Action(func(ctx *kingpin.ParseContext) error {
+		// more code here ...
+		oldUser := *commandUpdateArgOldUser
+		newUser := *commandUpdateArgNewUser
+		fmt.Printf("updating user from %s %s \n", oldUser, newUser)
+
+		return nil
+	})
+
+	commandDelete.Action(func(ctx *kingpin.ParseContext) error {
+		// more code here ...
+		user := *commandDeleteArgUser
+		force := *commandDeleteFlagForce
+		fmt.Printf("deleting user %s, force %t \n", user, force)
+
+		return nil
+	})
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 	appName := *flagAppName
 	port := fmt.Sprintf(":%d", *flagPort)
 
 	fmt.Printf("Starting %s at %s", appName, port)
 	r := echo.New()
-
-	r.Use(middlewareOne)
-	r.Use(echo.WrapMiddleware(middlewareSomething))
 
 	r.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "method=${method}, uri=${uri}, status=${status}\n",
