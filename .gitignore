@@ -1,0 +1,37 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Output of `go build`
+/bin/
+/build/
+/dist/
+
+# Go workspace file
+go.work
+go.work.sum
+
+# Dependency directories (vendor)
+vendor/
+
+# Go modules cache (usually not needed to be ignored, but safe to include)
+pkg/
+
+# IDE/editor configs
+.vscode/
+.idea/
+*.swp
+*.sublime-workspace
+*.sublime-project
+
+# Logs
+*.log
+
+# OS specific
+.DS_Store
+Thumbs.db
