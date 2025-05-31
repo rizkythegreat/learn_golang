@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"os"
+
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -44,14 +46,15 @@ func middlewareSomething(next http.Handler) http.Handler {
 }
 
 var (
-	argAppName = kingpin.Arg("name", "Application name").Required().String()
-	argPort    = kingpin.Arg("port", "Web server port").Default("9000").Int()
+	app         = kingpin.New("App", "Simple app")
+	flagAppName = app.Flag("name", "Application name").Required().String()
+	flagPort    = app.Flag("port", "Web server port").Short('p').Default("9000").Int()
 )
 
 func main() {
-	kingpin.Parse()
-	appName := *argAppName
-	port := fmt.Sprintf(":%d", *argPort)
+	kingpin.MustParse(app.Parse(os.Args[1:]))
+	appName := *flagAppName
+	port := fmt.Sprintf(":%d", *flagPort)
 
 	fmt.Printf("Starting %s at %s", appName, port)
 	r := echo.New()
